@@ -3,6 +3,7 @@ package vo
 type AccountVo struct {
 	BaseVo
 	Username     string `json:"username"`
+	SubToken     string `json:"subToken"`
 	Quota        int64  `json:"quota"`
 	Download     int64  `json:"download"`
 	Upload       int64  `json:"upload"`

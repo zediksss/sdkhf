@@ -60,8 +60,14 @@ func PageAccount(c *gin.Context) {
 
 	var accountVos []vo.AccountVo
 	for _, item := range accounts {
+		subToken, err := service.EnsureAccountSubToken(item)
+		if err != nil {
+			vo.Fail(err.Error(), c)
+			return
+		}
 		accountVo := vo.AccountVo{
 			Username:     *item.Username,
+			SubToken:     subToken,
 			Quota:        *item.Quota,
 			Download:     *item.Download,
 			Upload:       *item.Upload,
@@ -234,12 +240,18 @@ func GetAccount(c *gin.Context) {
 		vo.Fail(err.Error(), c)
 		return
 	}
+	subToken, err := service.EnsureAccountSubToken(account)
+	if err != nil {
+		vo.Fail(err.Error(), c)
+		return
+	}
 	accountVo := vo.AccountVo{
 		BaseVo: vo.BaseVo{
 			Id:         *account.Id,
 			CreateTime: *account.CreateTime,
 		},
 		Username:   *account.Username,
+		SubToken:   subToken,
 		Quota:      *account.Quota,
 		Download:   *account.Download,
 		Upload:     *account.Upload,

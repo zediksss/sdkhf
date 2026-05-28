@@ -33,6 +33,7 @@ export interface AccountLoginDto {
 
 export interface AccountVo extends IdDto {
   username: string;
+  subToken: string;
   quota: number;
   download: number;
   upload: number;

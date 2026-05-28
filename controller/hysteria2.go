@@ -195,7 +195,9 @@ func handleHysteria2Subscribe(c *gin.Context, identifier string, byToken bool) {
 	} else if strings.Contains(userAgent, constant.NekoBox) {
 		clientType = constant.NekoBox
 	} else {
-		clientType = constant.Clash
+		// Unknown clients are more likely to accept a base64-encoded link
+		// than a Clash YAML payload.
+		clientType = constant.V2rayN
 	}
 
 	var (
@@ -223,7 +225,7 @@ func handleHysteria2Subscribe(c *gin.Context, identifier string, byToken bool) {
 		c.Header("profile-title", fmt.Sprintf("base64:%s", base64.StdEncoding.EncodeToString([]byte(profileTitle))))
 		c.Header("profile-update-interval", "12")
 		c.Header("subscription-userinfo", userInfo)
-	} else if clientType == constant.V2rayN {
+	} else if clientType == constant.V2rayN || clientType == constant.NekoBox {
 		configStr = base64.StdEncoding.EncodeToString([]byte(configStr))
 	}
 

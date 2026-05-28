@@ -475,7 +475,6 @@ import { formatBytes } from "@/utils/byte";
 
 import {
   hysteria2KickApi,
-  hysteria2SubscribeUrlApi,
   hysteria2UrlApi,
 } from "@/api/hysteria2";
 import {
@@ -485,10 +484,7 @@ import {
 } from "element-plus/lib/components";
 import { useI18n } from "vue-i18n";
 
-import {
-  Hysteria2SubscribeUrlDto,
-  Hysteria2UrlDto,
-} from "@/api/hysteria2/types";
+import { Hysteria2UrlDto } from "@/api/hysteria2/types";
 import copy from "copy-to-clipboard";
 import { useRoute } from "vue-router";
 
@@ -683,6 +679,11 @@ const {
   qrCodeDialog,
   qrCodeSrc,
 } = toRefs(state);
+
+const buildSubscribeUrl = (subToken: string) => {
+  const pathPrefix = window.location.pathname.replace(/\/$/, "");
+  return `${window.location.protocol}//${window.location.host}${pathPrefix}/sub/${subToken}`;
+};
 
 const resetDataForm = () => {
   Object.assign(state.dataForm, {
@@ -904,13 +905,7 @@ const handleExport = () => {
 
 const handleSubscribe = async (row: { [key: string]: any }) => {
   try {
-    const dto: Hysteria2SubscribeUrlDto = {
-      accountId: row.id,
-      protocol: window.location.protocol,
-      host: window.location.host,
-    };
-    const { data } = await hysteria2SubscribeUrlApi(dto);
-    copy(data.url);
+    copy(buildSubscribeUrl(row.subToken));
     ElMessage.success(t("common.copySuccess"));
   } catch (e) {
     /* empty */

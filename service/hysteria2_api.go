@@ -219,7 +219,7 @@ func Hysteria2Subscribe(conPass string, clientType string, host string) (string,
 				configStr = fmt.Sprintf("%s%s", configStr, *clashExtension.Value)
 			}
 		}
-	} else if clientType == constant.V2rayN {
+	} else if clientType == constant.V2rayN || clientType == constant.NekoBox {
 		hysteria2Url, err := Hysteria2Url(*account.Id, strings.Split(host, ":")[0])
 		if err != nil {
 			return "", "", err

@@ -199,15 +199,14 @@ const state = reactive({
 
 const { qrCodeDialog, account, qrCodeSrc } = toRefs(state);
 
+const buildSubscribeUrl = (subToken: string) => {
+  const pathPrefix = window.location.pathname.replace(/\/$/, "");
+  return `${window.location.protocol}//${window.location.host}${pathPrefix}/sub/${subToken}`;
+};
+
 const handleSubscribe = async () => {
   try {
-    const dto: Hysteria2SubscribeUrlDto = {
-      accountId: accountStore.id,
-      protocol: window.location.protocol,
-      host: window.location.host,
-    };
-    const { data } = await hysteria2SubscribeUrlApi(dto);
-    copy(data.url);
+    copy(buildSubscribeUrl(state.account.subToken));
     ElMessage.success(t("common.copySuccess"));
   } catch (e) {
     /* empty */
