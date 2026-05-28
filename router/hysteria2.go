@@ -14,6 +14,10 @@ func initHysteria2AuthRouter(hysteria2Api *gin.RouterGroup) {
 	hysteria2Api.GET("/:conPass", controller.Hysteria2Subscribe)
 }
 
+func initHysteria2SubscribeRouter(group *gin.RouterGroup) {
+	group.GET("/sub/:subToken", controller.Hysteria2SubscribeByToken)
+}
+
 func initHysteria2Router(hysteria2Api *gin.RouterGroup) {
 	hysteria2 := hysteria2Api.Group("/hysteria2")
 	{

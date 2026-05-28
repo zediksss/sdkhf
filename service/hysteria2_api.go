@@ -13,6 +13,18 @@ import (
 	"time"
 )
 
+func GetHysteria2ProfileName() (string, error) {
+	hysteria2Name := "hysteria2"
+	hysteria2ConfigRemark, err := dao.GetConfig("key = ?", constant.Hysteria2ConfigRemark)
+	if err != nil {
+		return "", err
+	}
+	if hysteria2ConfigRemark.Value != nil && *hysteria2ConfigRemark.Value != "" {
+		hysteria2Name = *hysteria2ConfigRemark.Value
+	}
+	return hysteria2Name, nil
+}
+
 func Hysteria2Auth(conPass string) (int64, string, error) {
 	if !Hysteria2IsRunning() {
 		return 0, "", errors.New("hysteria2 is not running")
@@ -91,6 +103,10 @@ func Hysteria2SubscribeUrl(accountId int64, protocol string, host string) (strin
 	if err != nil {
 		return "", err
 	}
+	subToken, err := EnsureAccountSubToken(account)
+	if err != nil {
+		return "", err
+	}
 	config, err := dao.GetConfig("key = ?", constant.HUIWebContext)
 	if err != nil {
 		return "", err
@@ -99,7 +115,7 @@ func Hysteria2SubscribeUrl(accountId int64, protocol string, host string) (strin
 	if config.Value != nil && *config.Value != "/" && strings.HasPrefix(*config.Value, "/") {
 		webContext = *config.Value
 	}
-	return fmt.Sprintf("%s//%s%s/hui/%s", protocol, host, webContext, url.QueryEscape(*account.ConPass)), nil
+	return fmt.Sprintf("%s//%s%s/sub/%s", protocol, host, webContext, subToken), nil
 }
 
 func Hysteria2Subscribe(conPass string, clientType string, host string) (string, string, error) {
@@ -116,13 +132,9 @@ func Hysteria2Subscribe(conPass string, clientType string, host string) (string,
 		return "", "", err
 	}
 
-	hysteria2Name := "hysteria2"
-	hysteria2ConfigRemark, err := dao.GetConfig("key = ?", constant.Hysteria2ConfigRemark)
+	hysteria2Name, err := GetHysteria2ProfileName()
 	if err != nil {
 		return "", "", err
-	}
-	if *hysteria2ConfigRemark.Value != "" {
-		hysteria2Name = *hysteria2ConfigRemark.Value
 	}
 
 	hysteria2ConfigPortHopping, err := dao.GetConfig("key = ?", constant.Hysteria2ConfigPortHopping)
@@ -182,7 +194,7 @@ func Hysteria2Subscribe(conPass string, clientType string, host string) (string,
 		hysteria2.SkipCertVerify = false
 
 		proxyGroup := bo.ProxyGroup{
-			Name:    "PROXY",
+			Name:    hysteria2Name,
 			Type:    "select",
 			Proxies: []string{hysteria2Name},
 		}
@@ -213,9 +225,23 @@ func Hysteria2Subscribe(conPass string, clientType string, host string) (string,
 			return "", "", err
 		}
 		configStr = hysteria2Url
+	} else if clientType == constant.Happ {
+		hysteria2Url, err := Hysteria2Url(*account.Id, strings.Split(host, ":")[0])
+		if err != nil {
+			return "", "", err
+		}
+		configStr = strings.Replace(hysteria2Url, "hysteria2://", "hy2://", 1)
 	}
 
 	return userInfo, configStr, nil
+}
+
+func Hysteria2SubscribeByToken(subToken string, clientType string, host string) (string, string, error) {
+	account, err := dao.GetAccount("sub_token = ?", subToken)
+	if err != nil {
+		return "", "", err
+	}
+	return Hysteria2Subscribe(*account.ConPass, clientType, host)
 }
 
 func Hysteria2Url(accountId int64, hostname string) (string, error) {
@@ -268,15 +294,12 @@ func Hysteria2Url(accountId int64, hostname string) (string, error) {
 		urlConfig += fmt.Sprintf("&mport=%s", *hysteria2ConfigPortHopping.Value)
 	}
 
-	hysteria2ConfigRemark, err := dao.GetConfig("key = ?", constant.Hysteria2ConfigRemark)
+	hysteria2Name, err := GetHysteria2ProfileName()
 	if err != nil {
 		return "", err
-	}
-	if *hysteria2ConfigRemark.Value != "" {
-		urlConfig += fmt.Sprintf("#%s", *hysteria2ConfigRemark.Value)
 	}
 	if urlConfig != "" {
 		urlConfig = "/?" + strings.TrimPrefix(urlConfig, "&")
 	}
-	return fmt.Sprintf("hysteria2://%s@%s%s", *account.ConPass, hostname, *hysteria2Config.Listen) + urlConfig, nil
+	return fmt.Sprintf("hysteria2://%s@%s%s", *account.ConPass, hostname, *hysteria2Config.Listen) + urlConfig + "#" + url.PathEscape(hysteria2Name), nil
 }

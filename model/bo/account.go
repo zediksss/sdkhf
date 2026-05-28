@@ -14,6 +14,7 @@ type AccountExport struct {
 	Username     string    `json:"username"`
 	Pass         string    `json:"pass"`
 	ConPass      string    `json:"conPass"`
+	SubToken     string    `json:"subToken"`
 	Quota        int64     `json:"quota"`
 	Download     int64     `json:"download"`
 	Upload       int64     `json:"upload"`

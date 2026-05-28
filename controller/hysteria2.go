@@ -157,10 +157,23 @@ func Hysteria2SubscribeUrl(c *gin.Context) {
 
 func Hysteria2Subscribe(c *gin.Context) {
 	conPass := c.Param("conPass")
-	conPass, err := url.QueryUnescape(conPass)
-	if err != nil {
-		vo.Fail("url decode err", c)
-		return
+	handleHysteria2Subscribe(c, conPass, false)
+}
+
+func Hysteria2SubscribeByToken(c *gin.Context) {
+	subToken := c.Param("subToken")
+	handleHysteria2Subscribe(c, subToken, true)
+}
+
+func handleHysteria2Subscribe(c *gin.Context, identifier string, byToken bool) {
+	conPass := identifier
+	if !byToken {
+		var err error
+		conPass, err = url.QueryUnescape(identifier)
+		if err != nil {
+			vo.Fail("url decode err", c)
+			return
+		}
 	}
 	userAgent := strings.ToLower(c.Request.Header.Get("User-Agent"))
 	host := c.Request.Host
@@ -173,6 +186,8 @@ func Hysteria2Subscribe(c *gin.Context) {
 	var clientType string
 	if strings.Contains(userAgent, constant.Shadowrocket) {
 		clientType = constant.Shadowrocket
+	} else if strings.Contains(userAgent, constant.Happ) {
+		clientType = constant.Happ
 	} else if strings.Contains(userAgent, constant.Clash) {
 		clientType = constant.Clash
 	} else if strings.Contains(userAgent, constant.V2rayN) {
@@ -183,14 +198,29 @@ func Hysteria2Subscribe(c *gin.Context) {
 		clientType = constant.Clash
 	}
 
-	userInfo, configStr, err := service.Hysteria2Subscribe(conPass, clientType, host)
+	var (
+		userInfo  string
+		configStr string
+		err       error
+	)
+	if byToken {
+		userInfo, configStr, err = service.Hysteria2SubscribeByToken(identifier, clientType, host)
+	} else {
+		userInfo, configStr, err = service.Hysteria2Subscribe(conPass, clientType, host)
+	}
 	if err != nil {
 		vo.Fail(err.Error(), c)
 		return
 	}
 
-	if clientType == constant.Shadowrocket || clientType == constant.Clash {
+	if clientType == constant.Shadowrocket || clientType == constant.Clash || clientType == constant.Happ {
+		profileTitle, err := service.GetHysteria2ProfileName()
+		if err != nil {
+			vo.Fail(err.Error(), c)
+			return
+		}
 		c.Header("content-disposition", "attachment; filename=hui.yaml")
+		c.Header("profile-title", fmt.Sprintf("base64:%s", base64.StdEncoding.EncodeToString([]byte(profileTitle))))
 		c.Header("profile-update-interval", "12")
 		c.Header("subscription-userinfo", userInfo)
 	} else if clientType == constant.V2rayN {

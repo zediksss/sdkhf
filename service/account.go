@@ -10,6 +10,7 @@ import (
 	"h-ui/model/dto"
 	"h-ui/model/entity"
 	"h-ui/model/vo"
+	"h-ui/util"
 )
 
 func Login(username string, pass string) (string, error) {
@@ -30,7 +31,45 @@ func PageAccount(accountPageDto dto.AccountPageDto) ([]entity.Account, int64, er
 	return dao.PageAccount(accountPageDto)
 }
 
+func ensureUniqueSubToken() (string, error) {
+	for i := 0; i < 10; i++ {
+		subToken, err := util.RandomString(16)
+		if err != nil {
+			return "", err
+		}
+		_, err = dao.GetAccount("sub_token = ?", subToken)
+		if err != nil {
+			if err.Error() == constant.WrongPassword {
+				return subToken, nil
+			}
+			return "", err
+		}
+	}
+	return "", errors.New("generate subscribe token failed")
+}
+
+func EnsureAccountSubToken(account entity.Account) (string, error) {
+	if account.SubToken != nil && *account.SubToken != "" {
+		return *account.SubToken, nil
+	}
+	subToken, err := ensureUniqueSubToken()
+	if err != nil {
+		return "", err
+	}
+	if err = dao.UpdateAccount([]int64{*account.Id}, map[string]interface{}{"sub_token": subToken}); err != nil {
+		return "", err
+	}
+	return subToken, nil
+}
+
 func SaveAccount(account entity.Account) error {
+	if account.SubToken == nil || *account.SubToken == "" {
+		subToken, err := ensureUniqueSubToken()
+		if err != nil {
+			return err
+		}
+		account.SubToken = &subToken
+	}
 	_, err := dao.SaveAccount(account)
 	return err
 }
@@ -115,6 +154,7 @@ func ListExportAccount() ([]bo.AccountExport, error) {
 			Username:     *item.Username,
 			Pass:         *item.Pass,
 			ConPass:      *item.ConPass,
+			SubToken:     *item.SubToken,
 			Quota:        *item.Quota,
 			Download:     *item.Download,
 			Upload:       *item.Upload,
@@ -139,6 +179,15 @@ func ReleaseKickAccount(id int64) error {
 }
 
 func UpsertAccount(accounts []entity.Account) error {
+	for i := range accounts {
+		if accounts[i].SubToken == nil || *accounts[i].SubToken == "" {
+			subToken, err := ensureUniqueSubToken()
+			if err != nil {
+				return err
+			}
+			accounts[i].SubToken = &subToken
+		}
+	}
 	return dao.UpsertAccount(accounts)
 }
 
