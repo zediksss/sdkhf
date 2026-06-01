@@ -183,6 +183,11 @@ func handleHysteria2Subscribe(c *gin.Context, identifier string, byToken bool) {
 		return
 	}
 
+	if byToken && c.Query("raw") != "1" && c.Query("format") != "raw" && isBrowserUserAgent(userAgent) && !isKnownSubscribeClient(userAgent) {
+		renderHysteria2SubscribePage(c, identifier, host)
+		return
+	}
+
 	var clientType string
 	if strings.Contains(userAgent, constant.Shadowrocket) {
 		clientType = constant.Shadowrocket

@@ -16,6 +16,7 @@ func initHysteria2AuthRouter(hysteria2Api *gin.RouterGroup) {
 
 func initHysteria2SubscribeRouter(group *gin.RouterGroup) {
 	group.GET("/sub/:subToken", controller.Hysteria2SubscribeByToken)
+	group.GET("/sub-assets/:file", controller.Hysteria2SubscribeAsset)
 }
 
 func initHysteria2Router(hysteria2Api *gin.RouterGroup) {

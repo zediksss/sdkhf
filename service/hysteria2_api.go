@@ -7,11 +7,17 @@ import (
 	"h-ui/dao"
 	"h-ui/model/bo"
 	"h-ui/model/constant"
+	"h-ui/model/entity"
 	"h-ui/proxy"
 	"net/url"
 	"strings"
 	"time"
 )
+
+type Hysteria2SubscribePageData struct {
+	Account     entity.Account
+	ProfileName string
+}
 
 func GetHysteria2ProfileName() (string, error) {
 	hysteria2Name := "hysteria2"
@@ -242,6 +248,18 @@ func Hysteria2SubscribeByToken(subToken string, clientType string, host string) 
 		return "", "", err
 	}
 	return Hysteria2Subscribe(*account.ConPass, clientType, host)
+}
+
+func Hysteria2SubscribePageByToken(subToken string) (Hysteria2SubscribePageData, error) {
+	account, err := dao.GetAccount("sub_token = ?", subToken)
+	if err != nil {
+		return Hysteria2SubscribePageData{}, err
+	}
+	profileName, err := GetHysteria2ProfileName()
+	if err != nil {
+		return Hysteria2SubscribePageData{}, err
+	}
+	return Hysteria2SubscribePageData{Account: account, ProfileName: profileName}, nil
 }
 
 func Hysteria2Url(accountId int64, hostname string) (string, error) {
